@@ -11,7 +11,7 @@ const searchForm = document.querySelector('#search-form');
 // --- Hämta data (Async/Await) ---
 async function fetchData(endpoint) {
     try {
-        errorMsg.innerText = '';
+        errorMsg.innerText = ''; 
         
         const url = `${BASE_URL}${endpoint}&api_key=${API_KEY}&language=en-US&include_adult=false`;
 
@@ -26,13 +26,13 @@ async function fetchData(endpoint) {
 
     } catch (error) {
         console.log(error);
-        errorMsg.innerText = "Kunde inte hämta data. Kolla konsolen för mer info.";
+        errorMsg.innerText = "Kunde inte hämta data.";
         return [];
     }
 }
 
 // --- Visa Filmer ---
-function renderMovies(movies) {
+function renderMovies(movies, showDesc = true) {
     container.innerHTML = ''; 
 
     if (!movies || movies.length === 0) {
@@ -46,16 +46,19 @@ function renderMovies(movies) {
 
         const imgPath = movie.poster_path ? IMAGE_URL + movie.poster_path : 'https://via.placeholder.com/200x300?text=No+Image';
 
-        // ---  BESKRIVNINGEN ---
-        const description = movie.overview ? movie.overview.substring(0, 100) + '...' : 'Ingen beskrivning.';
+
+        let descHTML = '';
+        if (showDesc) {
+            const txt = movie.overview ? movie.overview.substring(0, 100) + '...' : 'Ingen beskrivning.';
+            descHTML = `<p class="desc">${txt}</p>`;
+        }
 
         card.innerHTML = `
             <img src="${imgPath}" alt="${movie.title}">
             <div class="card-info">
                 <h3>${movie.title}</h3>
                 <p class="date">Datum: ${movie.release_date || 'Okänt'}</p>
-                <p class="desc">${description}</p> 
-            </div>
+                ${descHTML} </div>
         `;
         container.appendChild(card);
     });
@@ -116,17 +119,24 @@ function animateCards() {
     }
 }
 
-// --- Listeners ---
+// --- Event Listeners ---
+
 document.querySelector('#top-rated-btn').addEventListener('click', async () => {
     const movies = await fetchData('/movie/top_rated?page=1');
-    if (movies) renderMovies(movies.slice(0, 10));
+    if (movies) {      
+        renderMovies(movies.slice(0, 10), false); 
+    }
 });
 
+// Knapp: Popular
 document.querySelector('#popular-btn').addEventListener('click', async () => {
     const movies = await fetchData('/movie/popular?page=1');
-    if (movies) renderMovies(movies.slice(0, 10));
+    if (movies) {
+        renderMovies(movies.slice(0, 10), false); 
+    }
 });
 
+// Sökformulär
 searchForm.addEventListener('submit', async (event) => {
     event.preventDefault(); 
     const query = document.querySelector('#search-input').value;
@@ -136,7 +146,10 @@ searchForm.addEventListener('submit', async (event) => {
         const encodedQuery = encodeURIComponent(query);
         const data = await fetchData(`/search/${type}?query=${encodedQuery}`);
 
-        if (type === 'movie') renderMovies(data);
-        else renderPeople(data);
+        if (type === 'movie') {
+            renderMovies(data, true); 
+        } else {
+            renderPeople(data);
+        }
     }
 });
